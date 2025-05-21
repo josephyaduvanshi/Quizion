@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Quizion</string>
+    <string name="enter_your_nickname">Enter your nickname</string>
+    <string name="Continue">Continue</string>
+    <string name="hey_ready_to_crush_it_today">Hey , ready to crush it today?</string>
+    <string name="topics_to_compete">Topics to Compete</string>
+    <string name="tools_for_you">Tools for you</string>
+    <string name="exit_quiz">Exit Quiz</string>
+    <string name="submit">Submit</string> <string name="next_question">Next Question</string> <string name="loading_questions">Loading Questions...</string>
+</resources>

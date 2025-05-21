@@ -1,0 +1,79 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/md_theme_light_background"
+    android:padding="24dp">
+
+    <!-- Lottie Animation for Welcome -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieAnimation"
+        android:layout_width="300dp"
+        android:layout_height="264dp"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:lottie_rawRes="@raw/quiz_welcome"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Welcome Text with Typewriter Effect -->
+    <com.shaivites.quizion.utils.TypeWriter
+        android:id="@+id/welcomeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/md_theme_light_primary"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/lato_bold"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/lottieAnimation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- EditText for Nickname Input with Neon Effect -->
+    <EditText
+        android:id="@+id/usernameInput"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="@string/enter_your_nickname"
+        android:autofillHints="Joseph"
+        android:textColorHint="@color/md_theme_light_primary"
+        android:textColor="@color/white"
+        android:background="@drawable/neon_edittext"
+        android:padding="14dp"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:textSize="18sp"
+        android:fontFamily="@font/lato_regular"
+        android:singleLine="true"
+        android:imeOptions="actionDone"
+        android:inputType="textPersonName"
+        app:layout_constraintTop_toBottomOf="@id/welcomeText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Continue Button with Neon Effect and Ripple Effect -->
+    <Button
+        android:id="@+id/continueBtn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/neon_button_ripple"
+        android:fontFamily="@font/lato_bold"
+        android:text="@string/Continue"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/usernameInput"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="12dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
