@@ -68,6 +68,7 @@ configurations.all {
 
 dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0") // Or your version
+    implementation("io.github.shashank02051997:FancyToast:2.0.2")
     implementation("com.google.android.material:material:1.12.0") // Or your version
     implementation("androidx.constraintlayout:constraintlayout:2.2.1") // Or your version
     // Splash Screen API

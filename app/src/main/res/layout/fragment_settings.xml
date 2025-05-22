@@ -1,43 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="?attr/colorSurfaceContainerLowest"
+    tools:context=".fragments.SettingsFragment">
 
     <TextView
         android:id="@+id/settingsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Settings"
-        android:textSize="24sp"
-        android:textColor="#000000"
-        android:layout_marginBottom="16dp" />
+        android:textSize="28sp"
+        android:textColor="?attr/colorOnSurface"
+        android:fontFamily="@font/lato_bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp" />
 
-    <!-- Example of a settings option -->
-    <Switch
-        android:id="@+id/notificationSwitch"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="General"
+        android:textSize="16sp"
+        android:textColor="?attr/colorPrimary"
+        android:fontFamily="@font/lato_bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/notificationSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="Enable Notifications"
-        android:textColor="#000000"
-        android:layout_marginBottom="16dp" />
-
-    <Button
-        android:id="@+id/changeThemeButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Change Theme"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:fontFamily="@font/lato_regular"
         android:layout_marginBottom="16dp"
-        android:textColor="#FFFFFF"
-        android:background="@color/md_theme_light_primary" />
+        app:thumbTint="?attr/colorPrimary"
+        app:trackTint="?attr/colorSurfaceContainerHighest"/>
 
-    <Button
-        android:id="@+id/logoutButton"
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Appearance"
+        android:textSize="16sp"
+        android:textColor="?attr/colorPrimary"
+        android:fontFamily="@font/lato_bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_theme_light"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Light Theme"
+        android:fontFamily="@font/lato_regular"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_theme_dark"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Dark Theme"
+        android:fontFamily="@font/lato_regular"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_theme_system"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="System Default Theme"
+        android:fontFamily="@font/lato_regular"
+        android:layout_marginBottom="24dp"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Account"
+        android:textSize="16sp"
+        android:textColor="?attr/colorPrimary"
+        android:fontFamily="@font/lato_bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_reset_progress"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reset All Progress"
+        android:textColor="?attr/colorError"
+        android:fontFamily="@font/lato_regular"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_logout"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="?attr/colorError"
+        app:icon="@drawable/ic_logout"
+        app:iconTint="?attr/colorOnError"
         android:text="Logout"
-        android:textColor="#FFFFFF"
-        android:background="@color/md_theme_light_primary" />
+        android:fontFamily="@font/lato_bold"
+        android:textColor="?attr/colorOnError" />
+
 </LinearLayout>

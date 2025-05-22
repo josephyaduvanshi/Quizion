@@ -1,5 +1,6 @@
 package com.shaivites.quizion.fragments;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -23,6 +24,7 @@ import com.shaivites.quizion.utils.DiceBearAvatarGenerator;
 import com.shaivites.quizion.utils.PreferenceHelper;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 public class ProfileFragment extends Fragment {
 
@@ -116,6 +118,7 @@ public class ProfileFragment extends Fragment {
         loadLastQuizData(context);
     }
 
+    @SuppressLint("SetTextI18n")
     private void loadSubjectStrengths(Context context) {
         strengthsContainer.removeAllViews();
 
@@ -125,7 +128,7 @@ public class ProfileFragment extends Fragment {
             if (profileStrengthsTitle != null) profileStrengthsTitle.setVisibility(View.GONE); // Hide title if no stats
             TextView noStatsText = new TextView(context);
             noStatsText.setText("Play some quizzes to see your strengths!");
-            noStatsText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+            noStatsText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
             noStatsText.setTextColor(ContextCompat.getColor(context, R.color.md_theme_light_onSurfaceVariant));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -144,8 +147,8 @@ public class ProfileFragment extends Fragment {
             int correct = 0;
             int total = 0;
             try {
-                correct = Integer.parseInt(entry.getValue().get("correct"));
-                total = Integer.parseInt(entry.getValue().get("total"));
+                correct = Integer.parseInt(Objects.requireNonNull(entry.getValue().get("correct")));
+                total = Integer.parseInt(Objects.requireNonNull(entry.getValue().get("total")));
             } catch (NumberFormatException e) {
                 // Log error or handle gracefully
             }
@@ -179,9 +182,9 @@ public class ProfileFragment extends Fragment {
             int correct = 0;
             int totalQuestions = 0;
             try {
-                scoreValue = Integer.parseInt(lastSummary.get("score"));
-                correct = Integer.parseInt(lastSummary.get("correct"));
-                totalQuestions = Integer.parseInt(lastSummary.get("total_questions"));
+                scoreValue = Integer.parseInt(lastSummary.get("score") == null ? "0" : Objects.requireNonNull(lastSummary.get("score")));
+                correct = Integer.parseInt(lastSummary.get("correct") == null ? "0" : Objects.requireNonNull(lastSummary.get("correct")));
+                totalQuestions = Integer.parseInt(lastSummary.get("total_questions") == null ? "0" : Objects.requireNonNull(lastSummary.get("total_questions")));
             } catch (NumberFormatException e) {
                 // Log or handle
             }

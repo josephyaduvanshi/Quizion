@@ -40,12 +40,16 @@
         <item name="strokeColor">@color/md_theme_light_primary</item>
         <item name="rippleColor">@color/md_theme_light_primary_container_low</item>
         <item name="android:backgroundTint">@android:color/transparent</item>
-        <item name="android:minHeight">56dp</item>
+        <item name="cornerRadius">8dp</item> <item name="android:minHeight">56dp</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>
         <item name="android:textAppearance">?attr/textAppearanceBodyLarge</item>
         <item name="fontFamily">@font/lato_regular</item>
         <item name="android:textAllCaps">false</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconPadding">8dp</item>
+        <item name="android:paddingTop">12dp</item>
     </style>
     <style name="Theme.Quizion.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/md_theme_light_primary</item>

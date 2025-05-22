@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.shaivites.quizion.MainActivity;
 import com.shaivites.quizion.R;
 import com.shaivites.quizion.utils.TypeWriter;
+import com.shashank.sony.fancytoastlib.FancyToast;
 
 import java.util.Random;
 
@@ -37,7 +38,7 @@ public class OnboardingActivity extends AppCompatActivity {
         continueBtn.setOnClickListener(v -> {
             String username = usernameInput.getText().toString().trim();
             if (username.isEmpty()) {
-                Toast.makeText(this, "Please enter a name", Toast.LENGTH_SHORT).show();
+                FancyToast.makeText(this,"Please enter a name",FancyToast.LENGTH_SHORT,FancyToast.ERROR,false).show();
                 return;
             }
 

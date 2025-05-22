@@ -7,11 +7,11 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,16 +27,17 @@ import com.google.gson.reflect.TypeToken;
 import com.shaivites.quizion.R;
 import com.shaivites.quizion.models.QuizQuestion;
 import com.shaivites.quizion.networking.GeminiApiService;
-import com.shaivites.quizion.utils.PreferenceHelper; // Import PreferenceHelper
+import com.shaivites.quizion.utils.PreferenceHelper;
+import com.shashank.sony.fancytoastlib.FancyToast;
 
 import java.lang.reflect.Type;
-import java.text.SimpleDateFormat; // For streak logic
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar; // For streak logic
-import java.util.Date; // For streak logic
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map; // For getAllTopicStats
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class QuizActivity extends AppCompatActivity implements View.OnClickListener {
@@ -72,16 +73,28 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     private Gson gson;
     private Handler mainThreadHandler;
 
+    private ColorStateList defaultOptionTextColorStateList;
+    private ColorStateList defaultOptionStrokeColorStateList;
+    private ColorStateList selectedOptionBgColorStateList;
+    private ColorStateList selectedOptionTextColorStateList;
+    private ColorStateList correctOptionBgColorStateList;
+    private ColorStateList incorrectOptionBgColorStateList;
+    private ColorStateList feedbackIconColorStateList;
+    private int defaultOptionStrokeWidthPx;
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
 
+        initializeColorsAndDimens();
+
         try {
             geminiApiService = new GeminiApiService();
         } catch (IllegalStateException e) {
             Log.e(TAG, "Failed to initialize GeminiApiService", e);
-            Toast.makeText(this, "Error initializing quiz service: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            FancyToast.makeText(this, "Error initializing quiz service: " + e.getMessage(), FancyToast.LENGTH_LONG,FancyToast.ERROR,false).show();
             finish();
             return;
         }
@@ -97,6 +110,25 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         setupListeners();
         loadQuestions();
     }
+
+    private void initializeColorsAndDimens() {
+        defaultOptionTextColorStateList = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
+        defaultOptionStrokeColorStateList = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
+        selectedOptionBgColorStateList = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
+        selectedOptionTextColorStateList = ContextCompat.getColorStateList(this, R.color.md_theme_light_onPrimary);
+        correctOptionBgColorStateList = ContextCompat.getColorStateList(this, R.color.holo_green_light_quiz);
+        incorrectOptionBgColorStateList = ContextCompat.getColorStateList(this, R.color.holo_red_light_quiz);
+        feedbackIconColorStateList = ContextCompat.getColorStateList(this, R.color.white);
+
+        try {
+            defaultOptionStrokeWidthPx = getResources().getDimensionPixelSize(R.dimen.quiz_option_button_stroke_width_default);
+        } catch (Exception e) {
+            Log.w(TAG, "quiz_option_button_stroke_width_default not found in dimens.xml, defaulting to 1dp in code");
+            defaultOptionStrokeWidthPx = (int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics());
+        }
+    }
+
 
     private void findViews() {
         progressIndicator = findViewById(R.id.quiz_progress_indicator);
@@ -148,7 +180,9 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
                             Log.i(TAG, "Successfully parsed " + parsedQuestions.size() + " questions.");
                             questionList = parsedQuestions;
                             totalQuestions = questionList.size();
-                            progressIndicator.setMax(totalQuestions);
+                            if (progressIndicator != null) {
+                                progressIndicator.setMax(totalQuestions);
+                            }
                             currentQuestionIndex = 0;
                             score = 0;
                             updateScoreUI();
@@ -182,7 +216,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void handleQuestionLoadError(String message) {
-        Toast.makeText(QuizActivity.this, message, Toast.LENGTH_LONG).show();
+        FancyToast.makeText(QuizActivity.this, message, FancyToast.LENGTH_LONG,FancyToast.ERROR,false).show();
         finish();
     }
 
@@ -202,9 +236,8 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
         if (currentQuestion == null || currentQuestion.getQuestion() == null || currentQuestion.getOptions() == null || currentQuestion.getOptions().size() < 4) {
             Log.e(TAG, "Invalid question data encountered at index: " + currentQuestionIndex + ". Skipping question.");
-            Toast.makeText(this, "Skipping invalid question data.", Toast.LENGTH_SHORT).show();
+            FancyToast.makeText(this, "Skipping invalid question data.", FancyToast.LENGTH_SHORT,FancyToast.INFO,false).show();
             currentQuestionIndex++;
-            // Potentially try to display next or end quiz if too many are bad
             if (currentQuestionIndex < totalQuestions) {
                 displayQuestion();
             } else {
@@ -213,19 +246,21 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
-        textViewQuestionNumber.setText(String.format(Locale.getDefault(), "Question %d/%d", currentQuestionIndex + 1, totalQuestions));
-        textViewQuestion.setText(currentQuestion.getQuestion());
+        if (textViewQuestionNumber != null) textViewQuestionNumber.setText(String.format(Locale.getDefault(), "Question %d/%d", currentQuestionIndex + 1, totalQuestions));
+        if (textViewQuestion != null) textViewQuestion.setText(currentQuestion.getQuestion());
 
         List<String> options = currentQuestion.getOptions();
-        buttonOption1.setText(options.get(0));
-        buttonOption2.setText(options.get(1));
-        buttonOption3.setText(options.get(2));
-        buttonOption4.setText(options.get(3));
+        if (buttonOption1 != null) buttonOption1.setText(options.get(0));
+        if (buttonOption2 != null) buttonOption2.setText(options.get(1));
+        if (buttonOption3 != null) buttonOption3.setText(options.get(2));
+        if (buttonOption4 != null) buttonOption4.setText(options.get(3));
 
         resetOptionButtonsAppearance();
         answerSubmitted = false;
-        buttonSubmitNext.setText(R.string.submit);
-        buttonSubmitNext.setEnabled(false);
+        if (buttonSubmitNext != null) {
+            buttonSubmitNext.setText(R.string.submit);
+            buttonSubmitNext.setEnabled(false);
+        }
         selectedOptionButton = null;
 
         startTimer(DEFAULT_TIME_PER_QUESTION);
@@ -233,16 +268,17 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
     private void resetOptionButtonsAppearance() {
         MaterialButton[] optionButtons = {buttonOption1, buttonOption2, buttonOption3, buttonOption4};
-        // Rely on the custom style "QuizOptionButton" for default appearance
         for (MaterialButton btn : optionButtons) {
-            btn.setEnabled(true);
-            btn.setChecked(false);
-            btn.setBackgroundTintList(null); // Use style's default
-            btn.setIcon(null);
-            // Explicitly set text and stroke if not perfectly handled by style on reset
-            btn.setTextColor(ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
-            btn.setStrokeColor(ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
-
+            if (btn != null) {
+                btn.setEnabled(true);
+                btn.setChecked(false);
+                btn.setBackgroundTintList(ContextCompat.getColorStateList(this, android.R.color.white)); // Key change: Clear programmatic tint to let style take over
+                // The style QuizOptionButton has android:backgroundTint="@android:color/transparent"
+                btn.setStrokeColor(defaultOptionStrokeColorStateList);
+                btn.setStrokeWidth(defaultOptionStrokeWidthPx);
+                btn.setTextColor(defaultOptionTextColorStateList);
+                btn.setIcon(null);
+            }
         }
     }
 
@@ -263,7 +299,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
                 if (selectedOptionButton != null) {
                     checkAnswer();
                 } else {
-                    Toast.makeText(this, "Please select an option.", Toast.LENGTH_SHORT).show();
+                    FancyToast.makeText(this, "Please select an option.", FancyToast.LENGTH_SHORT,FancyToast.ERROR,false).show();
                 }
             }
         } else if (viewId == R.id.button_option_1 || viewId == R.id.button_option_2 || viewId == R.id.button_option_3 || viewId == R.id.button_option_4) {
@@ -274,29 +310,25 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void handleOptionSelection(MaterialButton clickedButton) {
-        ColorStateList selectedBgColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
-        ColorStateList selectedTextColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_onPrimary);
-        // Default colors are now primarily handled by the style QuizOptionButton
-        ColorStateList defaultTextColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
-        ColorStateList defaultStrokeColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
-
-
         if (selectedOptionButton != null && selectedOptionButton != clickedButton) {
             selectedOptionButton.setChecked(false);
-            selectedOptionButton.setBackgroundTintList(null); // Revert to styled
-            selectedOptionButton.setTextColor(defaultTextColor);
-            selectedOptionButton.setStrokeColor(defaultStrokeColor);
+            selectedOptionButton.setBackgroundTintList(
+                    ContextCompat.getColorStateList(this, android.R.color.white) // Revert to transparent background
+            ); // Revert to styled (transparent background)
+            selectedOptionButton.setStrokeColor(defaultOptionStrokeColorStateList);
+            selectedOptionButton.setStrokeWidth(defaultOptionStrokeWidthPx);
+            selectedOptionButton.setTextColor(defaultOptionTextColorStateList);
         }
 
         selectedOptionButton = clickedButton;
         selectedOptionButton.setChecked(true);
 
-        selectedOptionButton.setBackgroundTintList(selectedBgColor);
-        selectedOptionButton.setTextColor(selectedTextColor);
-        // Optionally change stroke for selected state if desired
-        // selectedOptionButton.setStrokeColor(null); // Or a different color
+        // Apply selected state appearance (filled)
+        selectedOptionButton.setBackgroundTintList(selectedOptionBgColorStateList);
+        selectedOptionButton.setTextColor(selectedOptionTextColorStateList);
+        selectedOptionButton.setStrokeWidth(0); // No stroke when filled
 
-        buttonSubmitNext.setEnabled(true);
+        if (buttonSubmitNext != null) buttonSubmitNext.setEnabled(true);
     }
 
     private void checkAnswer() {
@@ -305,10 +337,10 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             countDownTimer.cancel();
         }
 
-        buttonOption1.setEnabled(false);
-        buttonOption2.setEnabled(false);
-        buttonOption3.setEnabled(false);
-        buttonOption4.setEnabled(false);
+        MaterialButton[] optionButtons = {buttonOption1, buttonOption2, buttonOption3, buttonOption4};
+        for (MaterialButton btn : optionButtons) {
+            if (btn != null) btn.setEnabled(false);
+        }
 
         QuizQuestion currentQuestion = questionList.get(currentQuestionIndex);
         int correctAnswerIndex = currentQuestion.getCorrectAnswerIndex();
@@ -321,38 +353,39 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             isCorrect = true;
         }
 
-        ColorStateList correctColor = ContextCompat.getColorStateList(this, android.R.color.holo_green_light);
-        ColorStateList incorrectColor = ContextCompat.getColorStateList(this, android.R.color.holo_red_light);
-        ColorStateList iconColor = ContextCompat.getColorStateList(this, R.color.white);
-
         if (isCorrect) {
             score += 10;
             PreferenceHelper.addXP(this, 10);
             if (selectedOptionButton != null) {
-                selectedOptionButton.setBackgroundTintList(correctColor);
+                selectedOptionButton.setBackgroundTintList(correctOptionBgColorStateList);
                 selectedOptionButton.setIconResource(R.drawable.ic_check);
-                selectedOptionButton.setIconTint(iconColor);
-                selectedOptionButton.setTextColor(ContextCompat.getColor(this, R.color.white));
+                selectedOptionButton.setIconTint(feedbackIconColorStateList);
+                selectedOptionButton.setTextColor(feedbackIconColorStateList);
+                selectedOptionButton.setStrokeWidth(0);
             }
         } else {
             if (selectedOptionButton != null) {
-                selectedOptionButton.setBackgroundTintList(incorrectColor);
+                selectedOptionButton.setBackgroundTintList(incorrectOptionBgColorStateList);
                 selectedOptionButton.setIconResource(R.drawable.ic_close);
-                selectedOptionButton.setIconTint(iconColor);
-                selectedOptionButton.setTextColor(ContextCompat.getColor(this, R.color.white));
+                selectedOptionButton.setIconTint(feedbackIconColorStateList);
+                selectedOptionButton.setTextColor(feedbackIconColorStateList);
+                selectedOptionButton.setStrokeWidth(0);
             }
             if (correctButton != null && correctButton != selectedOptionButton) {
-                correctButton.setBackgroundTintList(correctColor);
+                correctButton.setBackgroundTintList(correctOptionBgColorStateList);
                 correctButton.setIconResource(R.drawable.ic_check);
-                correctButton.setIconTint(iconColor);
-                correctButton.setTextColor(ContextCompat.getColor(this, R.color.white));
+                correctButton.setIconTint(feedbackIconColorStateList);
+                correctButton.setTextColor(feedbackIconColorStateList);
+                correctButton.setStrokeWidth(0);
             }
         }
         PreferenceHelper.updateTopicStats(this, topicTitle, isCorrect);
         updateScoreUI();
 
-        buttonSubmitNext.setText(R.string.next_question);
-        buttonSubmitNext.setEnabled(true);
+        if (buttonSubmitNext != null) {
+            buttonSubmitNext.setText(R.string.next_question);
+            buttonSubmitNext.setEnabled(true);
+        }
     }
 
     private int getSelectedOptionIndex() {
@@ -381,14 +414,12 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
     private void updateProgressIndicator() {
         if (progressIndicator != null) {
-            // Progress is 1-based for display, index is 0-based
-            int currentProgress = Math.min(currentQuestionIndex +1 , totalQuestions);
-            if (totalQuestions > 0) { // Ensure no division by zero if totalQuestions isn't set yet
+            int currentProgress = Math.min(currentQuestionIndex + 1 , totalQuestions);
+            if (totalQuestions > 0) {
                 progressIndicator.setProgressCompat(currentProgress, true);
             }
         }
     }
-
 
     private void startTimer(long duration) {
         if (countDownTimer != null) {
@@ -403,15 +434,14 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
                 timeLeftInMillis = millisUntilFinished;
                 updateTimerText();
             }
-
             @Override
             public void onFinish() {
                 timeLeftInMillis = 0;
                 updateTimerText();
                 if (!answerSubmitted) {
-                    Toast.makeText(QuizActivity.this, "Time's up!", Toast.LENGTH_SHORT).show();
-                    selectedOptionButton = null; // No option was selected in time
-                    checkAnswer(); // Process as unanswered or incorrect
+                    FancyToast.makeText(QuizActivity.this, "Time's up!", FancyToast.LENGTH_SHORT,FancyToast.ERROR,false).show();
+                    selectedOptionButton = null;
+                    checkAnswer();
                 }
             }
         }.start();
@@ -427,7 +457,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             textViewTimer.setText(timeFormatted);
 
             if (timeLeftInMillis < 10000 && timeLeftInMillis > 0) {
-                textViewTimer.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
+                textViewTimer.setTextColor(ContextCompat.getColor(this, R.color.holo_red_dark_quiz));
             } else {
                 textViewTimer.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_primary));
             }
@@ -442,8 +472,8 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
         updateStreakAfterQuizCompletion();
 
-        int xpGainedThisSession = score; // Or however you calculate XP gained
-        int correctAnswersCount = score / 10; // If 10 points per question
+        int xpGainedThisSession = score;
+        int correctAnswersCount = score / 10;
 
         PreferenceHelper.saveLastQuizSummary(this, topicTitle, score, correctAnswersCount, totalQuestions);
 
@@ -452,7 +482,6 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         summaryIntent.putExtra("QUIZ_SCORE", score);
         summaryIntent.putExtra("TOTAL_QUESTIONS", totalQuestions);
         summaryIntent.putExtra("XP_GAINED", xpGainedThisSession);
-        // Streak is read by SummaryActivity directly from Preferences
         startActivity(summaryIntent);
         finish();
     }
@@ -463,40 +492,40 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         String lastPlayedDateStr = PreferenceHelper.getLastPlayedDateForStreak(this);
         int currentStreak = PreferenceHelper.getStreak(this);
 
-        if (lastPlayedDateStr.isEmpty()) { // First quiz ever or after a long break
-            currentStreak = 1;
-        } else if (!lastPlayedDateStr.equals(currentDateStr)) { // Played on a new day
+        if (lastPlayedDateStr.isEmpty() || !lastPlayedDateStr.equals(currentDateStr)) {
+            Calendar cal = Calendar.getInstance();
             try {
-                Date lastPlayedDate = sdf.parse(lastPlayedDateStr);
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(lastPlayedDate);
-                cal.add(Calendar.DATE, 1); // Day after last played
-                String expectedNextDayForStreak = sdf.format(cal.getTime());
-
-                if (expectedNextDayForStreak.equals(currentDateStr)) {
-                    currentStreak++; // Continued streak
+                if (!lastPlayedDateStr.isEmpty()) {
+                    Date lastPlayedDateParsed = sdf.parse(lastPlayedDateStr);
+                    if (lastPlayedDateParsed != null) {
+                        cal.setTime(lastPlayedDateParsed);
+                        cal.add(Calendar.DATE, 1);
+                        String expectedYesterdayForStreakContinuation = sdf.format(cal.getTime());
+                        if (expectedYesterdayForStreakContinuation.equals(currentDateStr)) {
+                            currentStreak++;
+                        } else {
+                            currentStreak = 1;
+                        }
+                    } else {
+                        currentStreak = 1;
+                    }
                 } else {
-                    currentStreak = 1; // Streak broken (gap was more than 1 day)
+                    currentStreak = 1;
                 }
             } catch (java.text.ParseException e) {
                 Log.e(TAG, "Error parsing last played date for streak", e);
-                currentStreak = 1; // Reset on error
+                currentStreak = 1;
             }
         }
-        // If lastPlayedDateStr IS THE SAME as currentDateStr, streak doesn't increase further from this session.
-        // It would have been maintained or incremented if this was the first quiz of *today*.
 
         PreferenceHelper.saveStreak(this, currentStreak);
         PreferenceHelper.saveLastPlayedDateForStreak(this, currentDateStr);
     }
 
-
     private void showLoading(boolean isLoading) {
         if (progressBarLoading != null && groupQuizContent != null) {
             progressBarLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             groupQuizContent.setVisibility(isLoading ? View.GONE : View.VISIBLE);
-        } else {
-            Log.w(TAG, "Attempted to update loading state but views were null.");
         }
     }
 
