@@ -1,17 +1,103 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp">
+    android:background="?attr/colorSurfaceContainerLowest"
+    android:fillViewport="true"
+    tools:context=".fragments.HomeFragment">
 
-    <TextView
-        android:id="@+id/profileText"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="User Profile"
-        android:textSize="24sp"
-        android:textColor="#000000" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/home_avatar_image"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="centerCrop"
+                android:background="@drawable/avatar_circle_bg"
+                android:contentDescription="User Avatar"
+                android:layout_marginEnd="12dp" />
+
+            <TextView
+                android:id="@+id/home_hello_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="Hello, User 👋"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="20sp"
+                android:fontFamily="@font/lato_bold"/>
+
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:id="@+id/home_xp_level_streak_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                tools:text="XP: 240  |  Level: 1  |  Streak: 3 🔥"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="16sp"
+                android:fontFamily="@font/lato_regular"
+                android:gravity="center"/>
+        </com.google.android.material.card.MaterialCardView>
+
+
+        <TextView
+            android:id="@+id/home_tools_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tools_for_you"
+            android:textSize="20sp"
+            android:textColor="?attr/colorOnSurface"
+            android:fontFamily="@font/lato_bold"
+            android:layout_marginBottom="12dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/home_tools_recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="24dp"
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:spanCount="2"/>
+
+        <TextView
+            android:id="@+id/home_topics_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/topics_to_compete"
+            android:textSize="20sp"
+            android:textColor="?attr/colorOnSurface"
+            android:fontFamily="@font/lato_bold"
+            android:layout_marginBottom="12dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/home_topics_recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:spanCount="2"/>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

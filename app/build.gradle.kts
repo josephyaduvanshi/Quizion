@@ -70,7 +70,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0") // Or your version
     implementation("com.google.android.material:material:1.12.0") // Or your version
     implementation("androidx.constraintlayout:constraintlayout:2.2.1") // Or your version
-
+    // Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.1") // Or latest stable version
     // Picasso (from your file) - Keep if needed, but Glide is also present
     implementation("com.squareup.picasso:picasso:2.71828")
     // Lottie (from your file)

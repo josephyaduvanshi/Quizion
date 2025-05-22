@@ -9,41 +9,40 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ProgressBar; // Import ProgressBar
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.Group; // Import Group
+import androidx.constraintlayout.widget.Group;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
-import com.google.gson.Gson; // Import Gson
-import com.google.gson.JsonSyntaxException; // Import JsonSyntaxException
-import com.google.gson.reflect.TypeToken; // Import TypeToken
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import com.shaivites.quizion.R;
-import com.shaivites.quizion.models.QuizQuestion; // Import your QuizQuestion model
-import com.shaivites.quizion.networking.GeminiApiService; // Import GeminiApiService
+import com.shaivites.quizion.models.QuizQuestion;
+import com.shaivites.quizion.networking.GeminiApiService;
+import com.shaivites.quizion.utils.PreferenceHelper; // Import PreferenceHelper
 
 import java.lang.reflect.Type;
+import java.text.SimpleDateFormat; // For streak logic
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Calendar; // For streak logic
+import java.util.Date; // For streak logic
 import java.util.List;
 import java.util.Locale;
+import java.util.Map; // For getAllTopicStats
 import java.util.concurrent.TimeUnit;
 
-/**
- * Activity to display and handle the quiz interface.
- * Fetches questions using GeminiApiService and manages quiz state.
- */
 public class QuizActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "QuizActivity";
 
-    // --- UI Elements ---
     private LinearProgressIndicator progressIndicator;
     private ImageButton buttonExit;
     private TextView textViewScore;
@@ -53,36 +52,33 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     private MaterialButton buttonOption1, buttonOption2, buttonOption3, buttonOption4;
     private MaterialButton buttonSubmitNext;
     private MaterialCardView cardQuestion;
-    private ProgressBar progressBarLoading; // Loading indicator
-    private Group groupQuizContent; // Group for main content visibility
+    private ProgressBar progressBarLoading;
+    private Group groupQuizContent;
 
-    // --- Quiz State Variables ---
-    private String quizMode = "QUICK"; // Default mode, can be overridden by Intent
-    private String topicTitle = "General Knowledge"; // Default topic
+    private String quizMode = "QUICK";
+    private String topicTitle = "General Knowledge";
     private int currentQuestionIndex = 0;
     private int score = 0;
-    private int totalQuestions = 0; // Determined after fetching questions
+    private int totalQuestions = 0;
     private CountDownTimer countDownTimer;
     private long timeLeftInMillis;
     private static final long DEFAULT_TIME_PER_QUESTION = 30000; // 30 seconds
 
-    private List<QuizQuestion> questionList = new ArrayList<>(); // Initialize the list
+    private List<QuizQuestion> questionList = new ArrayList<>();
     private MaterialButton selectedOptionButton = null;
     private boolean answerSubmitted = false;
 
-    // --- Services and Utilities ---
     private GeminiApiService geminiApiService;
     private Gson gson;
-    private Handler mainThreadHandler; // To post results back to main thread
+    private Handler mainThreadHandler;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
 
-        // Initialize services and utilities
         try {
-            geminiApiService = new GeminiApiService(); // Initialize API service
+            geminiApiService = new GeminiApiService();
         } catch (IllegalStateException e) {
             Log.e(TAG, "Failed to initialize GeminiApiService", e);
             Toast.makeText(this, "Error initializing quiz service: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -92,25 +88,16 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         gson = new Gson();
         mainThreadHandler = new Handler(Looper.getMainLooper());
 
-        // Retrieve data from Intent
         Intent intent = getIntent();
         quizMode = intent.getStringExtra("QUIZ_MODE") != null ? intent.getStringExtra("QUIZ_MODE") : "QUICK";
         topicTitle = intent.getStringExtra("TOPIC_TITLE") != null ? intent.getStringExtra("TOPIC_TITLE") : "General Knowledge";
         Log.i(TAG, "Starting Quiz - Mode: " + quizMode + ", Topic: " + topicTitle);
 
-        // Initialize Views
         findViews();
-
-        // Setup Listeners
         setupListeners();
-
-        // Load questions from the API
         loadQuestions();
     }
 
-    /**
-     * Finds and assigns references to all the necessary UI elements from the layout.
-     */
     private void findViews() {
         progressIndicator = findViewById(R.id.quiz_progress_indicator);
         buttonExit = findViewById(R.id.button_exit_quiz);
@@ -127,14 +114,10 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         progressBarLoading = findViewById(R.id.progress_bar_loading);
         groupQuizContent = findViewById(R.id.group_quiz_content);
 
-        // Set initial UI state (loading)
-        showLoading(true); // Call helper method
-        updateScore();     // Call helper method
+        showLoading(true);
+        updateScoreUI();
     }
 
-    /**
-     * Sets OnClickListeners for interactive UI elements.
-     */
     private void setupListeners() {
         buttonExit.setOnClickListener(v -> finish());
         buttonOption1.setOnClickListener(this);
@@ -144,19 +127,17 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         buttonSubmitNext.setOnClickListener(this);
     }
 
-    /**
-     * Initiates the process of loading quiz questions from the Gemini API.
-     */
     private void loadQuestions() {
         Log.i(TAG, "Requesting questions from Gemini API for topic: " + topicTitle);
-        showLoading(true); // Show loading indicator
-        int numberOfQuestions = 10; // Example: fetch 10 questions
-        String difficulty = "Medium"; // Example: fetch medium difficulty
+        showLoading(true);
+        int numberOfQuestions = 10;
+        String difficulty = "Medium";
 
-        geminiApiService.generateQuizQuestions(topicTitle, difficulty, numberOfQuestions, new GeminiApiService.GeminiCallback() {
+        Map<String, Map<String, String>> allUserStats = PreferenceHelper.getAllTopicStats(this);
+
+        geminiApiService.generateQuizQuestions(topicTitle, difficulty, numberOfQuestions, allUserStats, new GeminiApiService.GeminiCallback() {
             @Override
             public void onSuccess(String generatedJson) {
-                // Process the successful response on the main thread
                 mainThreadHandler.post(() -> {
                     Log.d(TAG, "Received JSON from Gemini: " + generatedJson);
                     try {
@@ -170,12 +151,11 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
                             progressIndicator.setMax(totalQuestions);
                             currentQuestionIndex = 0;
                             score = 0;
-                            updateScore(); // Update score display
+                            updateScoreUI();
 
-                            // Questions loaded, show the first question
-                            showLoading(false); // Hide loading indicator
+                            showLoading(false);
                             displayQuestion();
-                            updateProgress(); // Update progress bar
+                            updateProgressIndicator();
                         } else {
                             Log.w(TAG, "Parsed questions list is null or empty after JSON parsing.");
                             handleQuestionLoadError("Received empty or invalid question data.");
@@ -193,27 +173,19 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onError(Throwable throwable) {
                 Log.e(TAG, "Error generating questions via Gemini API", throwable);
-                // Show error message on the main thread
                 mainThreadHandler.post(() -> {
-                    showLoading(false); // Hide loading indicator
+                    showLoading(false);
                     handleQuestionLoadError("Error fetching questions: " + throwable.getMessage());
                 });
             }
         });
     }
 
-    /**
-     * Handles errors during question loading, shows a message, and finishes the activity.
-     * @param message The error message to display.
-     */
     private void handleQuestionLoadError(String message) {
         Toast.makeText(QuizActivity.this, message, Toast.LENGTH_LONG).show();
-        finish(); // Exit the quiz activity if questions can't be loaded
+        finish();
     }
 
-    /**
-     * Displays the current question and its options on the UI.
-     */
     private void displayQuestion() {
         if (questionList == null || questionList.isEmpty()) {
             Log.e(TAG, "Attempted to display question, but question list is null or empty.");
@@ -222,7 +194,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         }
         if (currentQuestionIndex >= questionList.size()) {
             Log.i(TAG, "Reached end of question list.");
-            finishQuiz(); // Call helper method
+            finishQuiz();
             return;
         }
 
@@ -232,7 +204,12 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             Log.e(TAG, "Invalid question data encountered at index: " + currentQuestionIndex + ". Skipping question.");
             Toast.makeText(this, "Skipping invalid question data.", Toast.LENGTH_SHORT).show();
             currentQuestionIndex++;
-            displayQuestion();
+            // Potentially try to display next or end quiz if too many are bad
+            if (currentQuestionIndex < totalQuestions) {
+                displayQuestion();
+            } else {
+                finishQuiz();
+            }
             return;
         }
 
@@ -245,37 +222,30 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         buttonOption3.setText(options.get(2));
         buttonOption4.setText(options.get(3));
 
-        resetOptionButtons();
+        resetOptionButtonsAppearance();
         answerSubmitted = false;
-        buttonSubmitNext.setText(R.string.submit); // Use string resource
+        buttonSubmitNext.setText(R.string.submit);
         buttonSubmitNext.setEnabled(false);
         selectedOptionButton = null;
 
-        startTimer(DEFAULT_TIME_PER_QUESTION); // Call helper method
+        startTimer(DEFAULT_TIME_PER_QUESTION);
     }
 
-    /**
-     * Resets the appearance and state of all option buttons.
-     */
-    private void resetOptionButtons() {
-        MaterialButton[] options = {buttonOption1, buttonOption2, buttonOption3, buttonOption4};
-        ColorStateList defaultTextColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
-        ColorStateList defaultStrokeColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
-
-        for (MaterialButton btn : options) {
+    private void resetOptionButtonsAppearance() {
+        MaterialButton[] optionButtons = {buttonOption1, buttonOption2, buttonOption3, buttonOption4};
+        // Rely on the custom style "QuizOptionButton" for default appearance
+        for (MaterialButton btn : optionButtons) {
             btn.setEnabled(true);
             btn.setChecked(false);
-            btn.setBackgroundTintList(null);
-            btn.setStrokeColor(defaultStrokeColor);
-            btn.setTextColor(defaultTextColor);
+            btn.setBackgroundTintList(null); // Use style's default
             btn.setIcon(null);
+            // Explicitly set text and stroke if not perfectly handled by style on reset
+            btn.setTextColor(ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
+            btn.setStrokeColor(ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
+
         }
     }
 
-    /**
-     * Handles clicks on the option buttons and the submit/next button.
-     * @param v The view that was clicked.
-     */
     @Override
     public void onClick(View v) {
         int viewId = v.getId();
@@ -283,8 +253,12 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         if (viewId == R.id.button_submit_answer) {
             if (answerSubmitted) {
                 currentQuestionIndex++;
-                displayQuestion();
-                updateProgress(); // Call helper method
+                if (currentQuestionIndex < totalQuestions) {
+                    displayQuestion();
+                    updateProgressIndicator();
+                } else {
+                    finishQuiz();
+                }
             } else {
                 if (selectedOptionButton != null) {
                     checkAnswer();
@@ -299,32 +273,32 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    /**
-     * Updates the visual state of option buttons when one is selected.
-     * @param clickedButton The MaterialButton that was clicked.
-     */
     private void handleOptionSelection(MaterialButton clickedButton) {
         ColorStateList selectedBgColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
         ColorStateList selectedTextColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_onPrimary);
+        // Default colors are now primarily handled by the style QuizOptionButton
         ColorStateList defaultTextColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
+        ColorStateList defaultStrokeColor = ContextCompat.getColorStateList(this, R.color.md_theme_light_primary);
+
 
         if (selectedOptionButton != null && selectedOptionButton != clickedButton) {
             selectedOptionButton.setChecked(false);
-            selectedOptionButton.setBackgroundTintList(null);
+            selectedOptionButton.setBackgroundTintList(null); // Revert to styled
             selectedOptionButton.setTextColor(defaultTextColor);
+            selectedOptionButton.setStrokeColor(defaultStrokeColor);
         }
 
         selectedOptionButton = clickedButton;
         selectedOptionButton.setChecked(true);
+
         selectedOptionButton.setBackgroundTintList(selectedBgColor);
         selectedOptionButton.setTextColor(selectedTextColor);
+        // Optionally change stroke for selected state if desired
+        // selectedOptionButton.setStrokeColor(null); // Or a different color
 
         buttonSubmitNext.setEnabled(true);
     }
 
-    /**
-     * Checks the selected answer against the correct answer, updates UI feedback and score.
-     */
     private void checkAnswer() {
         answerSubmitted = true;
         if (countDownTimer != null) {
@@ -338,15 +312,10 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
         QuizQuestion currentQuestion = questionList.get(currentQuestionIndex);
         int correctAnswerIndex = currentQuestion.getCorrectAnswerIndex();
-        MaterialButton correctButton = getButtonByIndex(correctAnswerIndex); // Call helper method
+        MaterialButton correctButton = getButtonByIndex(correctAnswerIndex);
 
         boolean isCorrect = false;
-        int selectedIndex = -1;
-
-        if(selectedOptionButton == buttonOption1) selectedIndex = 0;
-        else if(selectedOptionButton == buttonOption2) selectedIndex = 1;
-        else if(selectedOptionButton == buttonOption3) selectedIndex = 2;
-        else if(selectedOptionButton == buttonOption4) selectedIndex = 3;
+        int selectedIndex = getSelectedOptionIndex();
 
         if (selectedIndex == correctAnswerIndex) {
             isCorrect = true;
@@ -358,72 +327,75 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
 
         if (isCorrect) {
             score += 10;
-            updateScore(); // Call helper method
+            PreferenceHelper.addXP(this, 10);
             if (selectedOptionButton != null) {
                 selectedOptionButton.setBackgroundTintList(correctColor);
-                selectedOptionButton.setIconResource(R.drawable.ic_check); // Use check icon
+                selectedOptionButton.setIconResource(R.drawable.ic_check);
                 selectedOptionButton.setIconTint(iconColor);
                 selectedOptionButton.setTextColor(ContextCompat.getColor(this, R.color.white));
             }
         } else {
             if (selectedOptionButton != null) {
                 selectedOptionButton.setBackgroundTintList(incorrectColor);
-                selectedOptionButton.setIconResource(R.drawable.ic_close); // Use close icon
+                selectedOptionButton.setIconResource(R.drawable.ic_close);
                 selectedOptionButton.setIconTint(iconColor);
                 selectedOptionButton.setTextColor(ContextCompat.getColor(this, R.color.white));
             }
-            // Highlight the correct answer if one exists and wasn't the selected one
             if (correctButton != null && correctButton != selectedOptionButton) {
                 correctButton.setBackgroundTintList(correctColor);
-                correctButton.setIconResource(R.drawable.ic_check); // Use check icon
+                correctButton.setIconResource(R.drawable.ic_check);
                 correctButton.setIconTint(iconColor);
                 correctButton.setTextColor(ContextCompat.getColor(this, R.color.white));
             }
         }
+        PreferenceHelper.updateTopicStats(this, topicTitle, isCorrect);
+        updateScoreUI();
 
-        buttonSubmitNext.setText(R.string.next_question); // Use string resource
+        buttonSubmitNext.setText(R.string.next_question);
         buttonSubmitNext.setEnabled(true);
     }
 
-    // --- START OF HELPER METHOD DEFINITIONS ---
+    private int getSelectedOptionIndex() {
+        if (selectedOptionButton == buttonOption1) return 0;
+        if (selectedOptionButton == buttonOption2) return 1;
+        if (selectedOptionButton == buttonOption3) return 2;
+        if (selectedOptionButton == buttonOption4) return 3;
+        return -1;
+    }
 
-    /**
-     * Helper method to get the MaterialButton corresponding to a given answer index (0-3).
-     */
     private MaterialButton getButtonByIndex(int index) {
         switch (index) {
             case 0: return buttonOption1;
             case 1: return buttonOption2;
             case 2: return buttonOption3;
             case 3: return buttonOption4;
-            default:
-                Log.e(TAG, "Invalid correct answer index received: " + index);
-                return null;
+            default: Log.e(TAG, "Invalid correct answer index: " + index); return null;
         }
     }
 
-    private void updateScore() {
+    private void updateScoreUI() {
         if (textViewScore != null) {
             textViewScore.setText(String.format(Locale.getDefault(), "Score: %d", score));
         }
     }
 
-    private void updateProgress() {
+    private void updateProgressIndicator() {
         if (progressIndicator != null) {
-            int progress = Math.min(currentQuestionIndex + 1, totalQuestions);
-            progressIndicator.setProgressCompat(progress, true);
+            // Progress is 1-based for display, index is 0-based
+            int currentProgress = Math.min(currentQuestionIndex +1 , totalQuestions);
+            if (totalQuestions > 0) { // Ensure no division by zero if totalQuestions isn't set yet
+                progressIndicator.setProgressCompat(currentProgress, true);
+            }
         }
     }
 
-    /**
-     * Starts the countdown timer for the current question.
-     */
+
     private void startTimer(long duration) {
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
         timeLeftInMillis = duration;
-        updateTimerText(); // Display initial time
+        updateTimerText();
 
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
             @Override
@@ -438,16 +410,13 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
                 updateTimerText();
                 if (!answerSubmitted) {
                     Toast.makeText(QuizActivity.this, "Time's up!", Toast.LENGTH_SHORT).show();
-                    selectedOptionButton = null;
-                    checkAnswer();
+                    selectedOptionButton = null; // No option was selected in time
+                    checkAnswer(); // Process as unanswered or incorrect
                 }
             }
         }.start();
     }
 
-    /**
-     * Updates the timer TextView, formatting milliseconds into MM:SS.
-     */
     private void updateTimerText() {
         if (textViewTimer != null) {
             String timeFormatted = String.format(Locale.getDefault(), "%02d:%02d",
@@ -457,7 +426,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             );
             textViewTimer.setText(timeFormatted);
 
-            if (timeLeftInMillis < 10000 && timeLeftInMillis > 0) { // Last 10 seconds
+            if (timeLeftInMillis < 10000 && timeLeftInMillis > 0) {
                 textViewTimer.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
             } else {
                 textViewTimer.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_primary));
@@ -465,21 +434,63 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    /**
-     * Handles the logic when the quiz finishes.
-     */
     private void finishQuiz() {
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
         Log.i(TAG, "Quiz Finished! Final Score: " + score + "/" + (totalQuestions * 10));
-        Toast.makeText(this, "Quiz Finished! Final Score: " + score, Toast.LENGTH_LONG).show();
-        finish(); // Close the QuizActivity
+
+        updateStreakAfterQuizCompletion();
+
+        int xpGainedThisSession = score; // Or however you calculate XP gained
+        int correctAnswersCount = score / 10; // If 10 points per question
+
+        PreferenceHelper.saveLastQuizSummary(this, topicTitle, score, correctAnswersCount, totalQuestions);
+
+        Intent summaryIntent = new Intent(this, QuizSummaryActivity.class);
+        summaryIntent.putExtra("QUIZ_TOPIC", topicTitle);
+        summaryIntent.putExtra("QUIZ_SCORE", score);
+        summaryIntent.putExtra("TOTAL_QUESTIONS", totalQuestions);
+        summaryIntent.putExtra("XP_GAINED", xpGainedThisSession);
+        // Streak is read by SummaryActivity directly from Preferences
+        startActivity(summaryIntent);
+        finish();
     }
 
-    /**
-     * Shows or hides the loading indicator and the main quiz content group.
-     */
+    private void updateStreakAfterQuizCompletion() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String currentDateStr = sdf.format(new Date());
+        String lastPlayedDateStr = PreferenceHelper.getLastPlayedDateForStreak(this);
+        int currentStreak = PreferenceHelper.getStreak(this);
+
+        if (lastPlayedDateStr.isEmpty()) { // First quiz ever or after a long break
+            currentStreak = 1;
+        } else if (!lastPlayedDateStr.equals(currentDateStr)) { // Played on a new day
+            try {
+                Date lastPlayedDate = sdf.parse(lastPlayedDateStr);
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(lastPlayedDate);
+                cal.add(Calendar.DATE, 1); // Day after last played
+                String expectedNextDayForStreak = sdf.format(cal.getTime());
+
+                if (expectedNextDayForStreak.equals(currentDateStr)) {
+                    currentStreak++; // Continued streak
+                } else {
+                    currentStreak = 1; // Streak broken (gap was more than 1 day)
+                }
+            } catch (java.text.ParseException e) {
+                Log.e(TAG, "Error parsing last played date for streak", e);
+                currentStreak = 1; // Reset on error
+            }
+        }
+        // If lastPlayedDateStr IS THE SAME as currentDateStr, streak doesn't increase further from this session.
+        // It would have been maintained or incremented if this was the first quiz of *today*.
+
+        PreferenceHelper.saveStreak(this, currentStreak);
+        PreferenceHelper.saveLastPlayedDateForStreak(this, currentDateStr);
+    }
+
+
     private void showLoading(boolean isLoading) {
         if (progressBarLoading != null && groupQuizContent != null) {
             progressBarLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
@@ -489,11 +500,6 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    // --- END OF HELPER METHOD DEFINITIONS ---
-
-    /**
-     * Cleans up resources, specifically cancelling the timer when the activity is destroyed.
-     */
     @Override
     protected void onDestroy() {
         super.onDestroy();

@@ -40,6 +40,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".activities.QuizSummaryActivity"
+            android:exported="false"
+            android:label="Quiz Summary"
+            android:theme="@style/Theme.Quizion" />
 
     </application>
 </manifest>
